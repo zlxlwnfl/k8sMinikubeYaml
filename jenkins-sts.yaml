@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: jenkins
+spec:
+  selector:
+    matchLabels:
+      app: jenkins
+  replicas: 1
+  serviceName: jenins
+  template:
+    metadata:
+      labels:
+        app: jenkins
+    spec:
+      containers:
+      - name: jenkins
+        image: jenkins/jenkins:lts-jdk11
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: jenkins-home
+          mountPath: /var/jenkins_home
+      - name: docker-dind
+        image: docker:18.05-dind
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: dind-storage
+          mountPath: /var/lib/docker
+      volumes:
+      - name: dind-storage
+        emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: jenkins-home
+      spec:
+        storageClassName: jenkins-sc
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 10Gi
